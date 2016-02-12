@@ -2,10 +2,10 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-#define NUM_ITERATIONS 1000
+#define MAX_ITERATIONS 1000
 #define NUM_PHILOSOPHERS 5
 #define NUM_FORKS 5
-#define WAIT_COEFF 1000000
+#define WAIT_COEFF 1000
 
 static pthread_t philosopher[NUM_PHILOSOPHERS];
 static pthread_mutex_t fork[NUM_FORKS] = {
@@ -116,15 +116,13 @@ int get_right_fork(int p_id)
 int acquire_forks(int p_id)
 {
 	printf("\nAgent %d is acquiring forks\n", p_id);
+	
   if(pthread_mutex_trylock(&fork[get_left_fork(p_id)]) &&
       pthread_mutex_trylock(&fork[get_right_fork(p_id)]))
   {
     //acquired -- invoke eating
     printf("\nAyyy lmao, agent %d is obtaining forks\n", p_id);
-    printf("\nid %d, left fork %d, right fork %d\n", p_id, get_left_fork(p_id), get_right_fork(p_id));
-    pthread_mutex_lock(&fork[get_left_fork(p_id)]);
-    pthread_mutex_lock(&fork[get_right_fork(p_id)]);
-    printf("passed this point?");
+    //printf("\nid %d, left fork %d, right fork %d\n", p_id, get_left_fork(p_id), get_right_fork(p_id));
     return 1;
   }
   else
@@ -168,8 +166,15 @@ void eat(int p_id)
 
 void think(int p_id)
 {
-  printf("Agent %d is thinking ... *poor course choices*\n", p_id);
-  wait(generate_random_wait(p_id));
-  eat(p_id);
+  if(iterations == MAX_ITERATIONS)
+  {
+    pthread_exit(NULL);
+  }
+  else
+  {
+    printf("Agent %d is thinking ... *poor course choices*\n", p_id);
+    wait(generate_random_wait(p_id));
+    eat(p_id);
+  }
 }
 

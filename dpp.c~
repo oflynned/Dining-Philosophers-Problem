@@ -8,8 +8,13 @@
 #define WAIT_COEFF 1000000
 
 static pthread_t philosopher[NUM_PHILOSOPHERS];
-static pthread_mutex_t fork[NUM_FORKS] = 
-							{ P99_DUPL(NUM_FORKS, PTHREAD_MUTEX_INITIALIZER) };
+static pthread_mutex_t fork[NUM_FORKS] = {
+    PTHREAD_MUTEX_INITIALIZER,
+    PTHREAD_MUTEX_INITIALIZER,
+    PTHREAD_MUTEX_INITIALIZER,
+    PTHREAD_MUTEX_INITIALIZER,
+    PTHREAD_MUTEX_INITIALIZER
+};
 static pthread_mutex_t iteration_lock = PTHREAD_MUTEX_INITIALIZER;
 
 int iterations = 0;

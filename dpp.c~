@@ -2,10 +2,10 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-#define MAX_ITERATIONS 999
+#define MAX_ITERATIONS 100
 #define NUM_PHILOSOPHERS 5
 #define NUM_FORKS 5
-#define WAIT_COEFF 1000
+#define WAIT_COEFF 100000
 
 static pthread_t philosopher[NUM_PHILOSOPHERS];
 static pthread_mutex_t fork[NUM_FORKS] = {
@@ -18,7 +18,7 @@ static pthread_mutex_t fork[NUM_FORKS] = {
 static pthread_mutex_t eat_lock = PTHREAD_MUTEX_INITIALIZER;
 static pthread_mutex_t wait_lock = PTHREAD_MUTEX_INITIALIZER;
 
-int iterations = 0, tot_waiting_iterations = 0;
+int iterations = 0, tot_waiting_iterations = 0, max_waiting_time = 0;
 long tot_waiting_time = 0;
 
 //timing helpers
@@ -49,15 +49,17 @@ int main(void)
 	  }
 	}
 	
-	printf("\n\n************exiting**************\n\n");
-	printf("\nwaiting iterations: %d", tot_waiting_iterations);
-	printf("\nmax eating iterations: %d", MAX_ITERATIONS);
-	printf("\nwaiting time: %ld", tot_waiting_time);
-	
 	for(p = 0; p < NUM_PHILOSOPHERS; p++)
 	{
 	  rc = pthread_join(philosopher[p], NULL);
 	}
+	
+	printf("\n\n************exiting**************\n\n");
+	printf("\nwaiting iterations: %d", tot_waiting_iterations);
+	printf("\nmax eating iterations: %d", MAX_ITERATIONS);
+	printf("\nwaiting time: %ldus", tot_waiting_time);
+	printf("\nmax time: %ldus", max_waiting_time);
+	printf("\naverage waiting time: %dus\n", tot_waiting_time / tot_waiting_iterations);
 }
 
 //timing helpers
@@ -66,6 +68,8 @@ long generate_random_wait(int p_id)
   long time = drand48() * WAIT_COEFF;; 
   printf("\nAgent %d is waiting for %ld\n", p_id, time);
   pthread_mutex_lock(&wait_lock);
+  if(time > max_waiting_time)
+    max_waiting_time = time;
   tot_waiting_time += time;
   pthread_mutex_unlock(&wait_lock);
   return time;

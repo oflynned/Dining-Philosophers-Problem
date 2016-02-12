@@ -5,23 +5,17 @@
 #define NUM_ITERATIONS 1000
 #define NUM_PHILOSOPHERS 5
 #define NUM_FORKS 5
-#define LOWER_WAIT 1000
-#define UPPER_WAIT 1000000
+#define WAIT_COEFF 1000000
 
-pthread_t philosopher[NUM_PHILOSOPHERS];
-static pthread_mutex_t fork[NUM_FORKS] = {
-    PTHREAD_MUTEX_INITIALIZER,
-    PTHREAD_MUTEX_INITIALIZER,
-    PTHREAD_MUTEX_INITIALIZER,
-    PTHREAD_MUTEX_INITIALIZER,
-    PTHREAD_MUTEX_INITIALIZER
-};
-pthread_mutex_t iteration_lock = PTHREAD_MUTEX_INITIALIZER;
+static pthread_t philosopher[NUM_PHILOSOPHERS];
+static pthread_mutex_t fork[NUM_FORKS] = 
+							{ P99_DUPL(NUM_FORKS, PTHREAD_MUTEX_INITIALIZER) };
+static pthread_mutex_t iteration_lock = PTHREAD_MUTEX_INITIALIZER;
 
 int iterations = 0;
 
 //timing helpers
-long generate_random_wait(long lower, long upper, int p_id);
+long generate_random_wait(int p_id);
 void wait(long duration);
 long get_avg_wait();
 long get_peak_wait();
@@ -52,20 +46,13 @@ int main(void)
 	{
 	  rc = pthread_join(philosopher[p], NULL);
 	}
-	
-	for(f = 0; f < NUM_FORKS; f++)
-	{
-    pthread_mutex_destroy(&fork[f]);
-	}
 }
 
 //timing helpers
-long generate_random_wait(long lower, long upper, int p_id)
+long generate_random_wait(int p_id)
 {
-  srand((unsigned)time(NULL));
-  long long time = lower + (rand() % (upper - lower + 1)); 
-  
-  printf("%d is waiting for %ld", p_id, time);
+  long time = drand48() * WAIT_COEFF;; 
+  printf("\nAgent %d is waiting for %ld\n", p_id, time);
   return time;
 }
 
@@ -79,9 +66,9 @@ long get_peak_wait(){return 0;}
 
 void* generate_state_choice(void* arg)
 {
-  srand((unsigned)time(NULL));
-  int num = (rand() % 100) + 1;
-  int *p_id = (int*) arg;
+  int num = drand48() * WAIT_COEFF;
+  int p_id = (int) arg;
+  //printf("\nRandom number chosen is %d\n", num);
   if(num < 50)
   {
     think(p_id);
@@ -96,15 +83,15 @@ void* generate_state_choice(void* arg)
 int get_left_fork(int p_id)
 { 
   if(p_id == 0)
-    return 4;
-  else if(p_id == 1)
     return 0;
-  else if(p_id == 2)
+  else if(p_id == 1)
     return 1;
-  else if(p_id == 3)
+  else if(p_id == 2)
     return 2;
-  else if(p_id == 4)
+  else if(p_id == 3)
     return 3;
+  else if(p_id == 4)
+    return 4;
 }
 
 int get_right_fork(int p_id)
@@ -123,17 +110,22 @@ int get_right_fork(int p_id)
 
 int acquire_forks(int p_id)
 {
+	printf("\nAgent %d is acquiring forks\n", p_id);
   if(pthread_mutex_trylock(&fork[get_left_fork(p_id)]) &&
       pthread_mutex_trylock(&fork[get_right_fork(p_id)]))
   {
     //acquired -- invoke eating
+    printf("\nAyyy lmao, agent %d is obtaining forks\n", p_id);
+    printf("\nid %d, left fork %d, right fork %d\n", p_id, get_left_fork(p_id), get_right_fork(p_id));
     pthread_mutex_lock(&fork[get_left_fork(p_id)]);
     pthread_mutex_lock(&fork[get_right_fork(p_id)]);
+    printf("passed this point?");
     return 1;
   }
   else
   {
     //already acquired by another agent -- return to thinking
+    printf("\nAgent %d cannot obtain forks -- thinking\n", p_id);
     return 0;
   }
 }
@@ -146,17 +138,20 @@ void release_forks(int p_id)
 
 void eat(int p_id)
 {
-  if(acquire_forks(p_id) == 1)
+	int result = acquire_forks(p_id);
+  if(result == 1)
   {
-    printf("\n%d is eating\n", p_id);
-    printf("forks %d and %d are locked!", get_left_fork(p_id), get_right_fork(p_id));
-    wait(generate_random_wait(LOWER_WAIT, UPPER_WAIT, p_id));
+    printf("\nAgent %d is eating\n", p_id);
+    printf("\nForks %d and %d are locked!\n", get_left_fork(p_id), get_right_fork(p_id));
+    wait(generate_random_wait(p_id));
+    printf("OM NOM NOM NOM NOM NOM NOM");
     release_forks(p_id);
-    printf("forks %d and %d are unlocked!", get_left_fork(p_id), get_right_fork(p_id));
+    printf("\nForks %d and %d are unlocked!\n", get_left_fork(p_id), get_right_fork(p_id));
+    printf("Agent %d is mildly satisfied and is returning to the arts life\n", p_id);
     
     pthread_mutex_lock(&iteration_lock);
     iterations++;
-    printf("iteration #%d", iterations);
+    printf("\niteration #%d\n", iterations);
     pthread_mutex_unlock(&iteration_lock);
     think(p_id);
   }
@@ -168,8 +163,8 @@ void eat(int p_id)
 
 void think(int p_id)
 {
-  printf("\n%d is thinking\n", p_id);
-  wait(generate_random_wait(LOWER_WAIT, UPPER_WAIT, p_id));
+  printf("Agent %d is thinking ... *poor course choices*\n", p_id);
+  wait(generate_random_wait(p_id));
   eat(p_id);
 }
 

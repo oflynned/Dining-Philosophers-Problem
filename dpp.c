@@ -18,14 +18,12 @@ static pthread_mutex_t fork[NUM_FORKS] = {
 static pthread_mutex_t eat_lock = PTHREAD_MUTEX_INITIALIZER;
 static pthread_mutex_t wait_lock = PTHREAD_MUTEX_INITIALIZER;
 
-int iterations = 0, tot_waiting_iterations = 0, max_waiting_time = 0;
+int iterations = 0, tot_waiting_iterations = 0, max_waiting_time = 0, lowest_waiting_time = WAIT_COEFF;
 long tot_waiting_time = 0;
 
 //timing helpers
 long generate_random_wait(int p_id);
 void wait(long duration);
-long get_avg_wait();
-long get_peak_wait();
 void* generate_state_choice(void* arg);
 
 //statial behaviour cycle
@@ -59,6 +57,7 @@ int main(void)
 	printf("\nmax eating iterations: %d", MAX_ITERATIONS);
 	printf("\nwaiting time: %ldus", tot_waiting_time);
 	printf("\nmax time: %ldus", max_waiting_time);
+	printf("\nlowest time: %ldus", lowest_waiting_time);
 	printf("\naverage waiting time: %dus\n", tot_waiting_time / tot_waiting_iterations);
 }
 
@@ -66,10 +65,12 @@ int main(void)
 long generate_random_wait(int p_id)
 {
   long time = drand48() * WAIT_COEFF;; 
-  printf("\nAgent %d is waiting for %ld\n", p_id, time);
+  printf("\nAgent %d is waiting for %ldus\n", p_id, time);
   pthread_mutex_lock(&wait_lock);
   if(time > max_waiting_time)
     max_waiting_time = time;
+  if(time < lowest_waiting_time)
+  	lowest_waiting_time = time;
   tot_waiting_time += time;
   pthread_mutex_unlock(&wait_lock);
   return time;
@@ -80,11 +81,9 @@ void wait(long duration)
   usleep(duration);
 }
 
-long get_avg_wait(){return 0;}
-long get_peak_wait(){return 0;}
-
 void* generate_state_choice(void* arg)
 {
+	//thread safe drand48() -- do not use seeded values via rand()
   int num = drand48() * WAIT_COEFF;
   int p_id = (int) arg;
   //printf("\nRandom number chosen is %d\n", num);

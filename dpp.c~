@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-#define MAX_ITERATIONS 1000
+#define MAX_ITERATIONS 100
 #define NUM_PHILOSOPHERS 5
 #define NUM_FORKS 5
 #define WAIT_COEFF 1000
@@ -64,7 +64,7 @@ int main(void)
 //timing helpers
 long generate_random_wait(int p_id)
 {
-  long time = drand48() * WAIT_COEFF;; 
+  long time = lrand48() / WAIT_COEFF; 
   printf("\nAgent %d is waiting for %ldus\n", p_id, time);
   pthread_mutex_lock(&wait_lock);
   if(time > max_waiting_time)
@@ -86,7 +86,7 @@ void* generate_state_choice(void* arg)
 	//thread safe drand48() -- do not use seeded values via rand()
   int num = drand48() * WAIT_COEFF;
   int p_id = (int) arg;
-  //printf("\nRandom number chosen is %d\n", num);
+  printf("\n*****************Random number chosen is %d\n", num);
   if(num < 50)
   {
     think(p_id);
